@@ -4,6 +4,12 @@
 
 ---
 
+## Requirements & Configuration
+
+1. **Python 3.x** (if running from source) or the compiled `SteamUnbound.exe`.
+2. **Hubcap API Key / Endpoint:** SteamUnbound relies on a Hubcap instance/API key to fetch live store metadata and manifest structures. Make sure to configure your API endpoint/key in the settings before attempting to download depots.
+3. **External Binaries:** Ensure the `DepotDownloaderMod` and `Steamless` folders are placed in the same directory as the executable.
+
 ## Architecture and Core Functionality
 
 SteamUnbound operates as a GUI wrapper and orchestration engine for multiple backend tools. Below is an in-depth explanation of how each core system within the app functions:
