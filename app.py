@@ -14,6 +14,7 @@ from PIL import Image
 from pathlib import Path
 
 CONFIG_FILE = "config.json"
+BASE_DIR = Path(__file__).resolve().parent
 
 def load_config():
     if os.path.exists(CONFIG_FILE):
@@ -29,6 +30,26 @@ def save_config(key, value):
     config[key] = value
     with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4)
+
+def preparar_estructura_logros_goldberg(app_id, game_name):
+    try:
+        appdata_path = Path(os.environ.get("APPDATA", "")) / "Goldberg SteamEmu Saves" / str(app_id)
+        stats_dir = appdata_path / "remote" / str(app_id) / "stats"
+        stats_dir.mkdir(parents=True, exist_ok=True)
+
+        achievements_json = stats_dir / "achievements.json"
+        if not achievements_json.exists():
+            initial_data = {
+                "appid": int(app_id),
+                "name": game_name,
+                "achievements": []
+            }
+            with open(achievements_json, "w", encoding="utf-8") as f:
+                json.dump(initial_data, f, indent=4)
+        return True
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
 
 def crear_acceso_directo_escritorio(nombre_juego, ruta_juego):
     try:
@@ -109,12 +130,15 @@ class SteamUnboundApp:
         self.notebook.pack(fill="both", expand=True, padx=6, pady=6)
 
         self.tab_download = tk.Frame(self.notebook, bg=self.bg_black)
+        self.tab_tools = tk.Frame(self.notebook, bg=self.bg_black)
         self.tab_settings = tk.Frame(self.notebook, bg=self.bg_black)
 
         self.notebook.add(self.tab_download, text=" Download ")
+        self.notebook.add(self.tab_tools, text=" Tools ")
         self.notebook.add(self.tab_settings, text=" Settings ")
 
         self.build_download_tab()
+        self.build_tools_tab()
         self.build_settings_tab()
 
     def build_download_tab(self):
@@ -159,22 +183,78 @@ class SteamUnboundApp:
         self.text_log = tk.Text(log_frame, height=5, bg=self.panel_dark, fg=self.text_light, font=("Tahoma", 8), relief="solid", bd=1, state="disabled")
         self.text_log.pack(fill="both", expand=True, padx=8, pady=3)
 
-        # BARRA DE PROGRESO RETRO CON BLOQUES (Canvas)
         canvas_container = tk.Frame(log_frame, bg=self.bg_black)
         canvas_container.pack(fill="x", padx=8, pady=(0, 5))
 
         self.progress_canvas = tk.Canvas(canvas_container, height=18, bg="#0d0a14", highlightthickness=1, highlightbackground="#2d2242")
         self.progress_canvas.pack(fill="x", expand=True)
 
+    def build_tools_tab(self):
+        f = tk.Frame(self.tab_tools, bg=self.bg_black)
+        f.pack(fill="both", expand=True, padx=20, pady=20)
+
+        tk.Label(f, text="Multiplayer & Online Integration", fg="#d1a3ff", bg=self.bg_black, font=("Tahoma", 11, "bold")).pack(anchor="w", pady=(0, 10))
+        
+        self.multiplayer_var = tk.BooleanVar(value=self.config_data.get("enable_multiplayer", False))
+        chk_multiplayer = tk.Checkbutton(
+            f, text="Enable Goldberg P2P / Lobby Connect (Disable Offline Mode)", 
+            variable=self.multiplayer_var, bg=self.bg_black, fg=self.text_light, 
+            selectcolor=self.panel_dark, activebackground=self.bg_black, activeforeground=self.text_light,
+            font=("Tahoma", 9, "bold"), command=self.guardar_estado_multiplayer
+        )
+        chk_multiplayer.pack(anchor="w", pady=(0, 15))
+
+        tk.Label(f, text="Quick Nickname Overrider", fg="#d1a3ff", bg=self.bg_black, font=("Tahoma", 11, "bold")).pack(anchor="w", pady=(10, 5))
+        tk.Label(f, text="Select an installed game folder to update its Goldberg nickname instantly.", fg=self.text_muted, bg=self.bg_black, font=("Tahoma", 9)).pack(anchor="w", pady=(0, 8))
+
+        nick_action_frame = tk.Frame(f, bg=self.bg_black)
+        nick_action_frame.pack(anchor="w", fill="x", pady=(0, 10))
+
+        self.e_tool_nick = tk.Entry(nick_action_frame, width=25, font=("Tahoma", 9), bg=self.panel_dark, fg=self.text_light, insertbackground="white", relief="solid", bd=1)
+        self.e_tool_nick.pack(side="left", padx=(0, 8), ipady=3)
+        current_nick = self.config_data.get("nickname", "SteamUnbound")
+        self.e_tool_nick.insert(0, current_nick)
+
+        btn_apply_nick = tk.Button(nick_action_frame, text="Apply to Game Folder...", bg=self.accent_violet, fg="#ffffff", font=("Tahoma", 9, "bold"), relief="flat", activebackground=self.accent_hover, activeforeground="white", command=self.aplicar_nickname_a_juego, cursor="hand2")
+        btn_apply_nick.pack(side="left", ipadx=8, ipady=3)
+
+    def guardar_estado_multiplayer(self):
+        save_config("enable_multiplayer", self.multiplayer_var.get())
+
+    def aplicar_nickname_a_juego(self):
+        nuevo_nick = self.e_tool_nick.get().strip()
+        if not nuevo_nick:
+            messagebox.showwarning("Warning", "Please enter a valid nickname.")
+            return
+
+        carpeta_juego = filedialog.askdirectory(title="Select Game Root Folder")
+        if not carpeta_juego:
+            return
+
+        actualizados = 0
+        for root_dir, dirs, files in os.walk(carpeta_juego):
+            if "steam_settings" in root_dir.lower() or "engine" in root_dir.lower():
+                force_file = os.path.join(root_dir, "force_account_name.txt")
+                try:
+                    with open(force_file, "w", encoding="utf-8") as f:
+                        f.write(nuevo_nick)
+                    actualizados += 1
+                except:
+                    pass
+
+        if actualizados > 0:
+            messagebox.showinfo("SteamUnbound", f"Nickname successfully updated in {actualizados} location(s)!")
+        else:
+            messagebox.showwarning("SteamUnbound", "No steam_settings folder found inside the selected directory.")
+
     def actualizar_progreso_retro(self, porcentaje):
         self.progress_canvas.delete("all")
         w = self.progress_canvas.winfo_width()
         if w < 10:
-            w = 380  # fallback por si recién arranca
+            w = 380
 
-        total_blocks = 30  # Cantidad de bloquecitos de la barra
+        total_blocks = 30
         block_width = (w - (total_blocks + 1) * 2) / total_blocks
-        
         active_blocks = int((porcentaje / 100.0) * total_blocks)
 
         for i in range(total_blocks):
@@ -182,12 +262,7 @@ class SteamUnboundApp:
             y1 = 2
             x2 = x1 + block_width
             y2 = 16
-
-            if i < active_blocks:
-                color = "#9c27b0"  # Violeta Steam estilo retro encendido
-            else:
-                color = "#1d1729"  # Apagado / fondo del bloque
-
+            color = "#9c27b0" if i < active_blocks else "#1d1729"
             self.progress_canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="")
 
     def log_message(self, message):
@@ -460,7 +535,6 @@ class SteamUnboundApp:
 
         if os.path.exists(keys_file): os.remove(keys_file)
 
-        # Detección automática inteligente de Unreal Engine
         is_unreal_engine = False
         if os.path.exists(os.path.join(ruta_juego, "Engine")):
             is_unreal_engine = True
@@ -501,13 +575,14 @@ class SteamUnboundApp:
         else:
             self.log_message("Steamless skipped safely due to engine type.")
 
-        self.log_message("Applying recursive Goldberg Emulator fork patch & Achievement Watcher settings...")
+        self.log_message("Applying recursive Goldberg Emulator fork patch & configuring save paths...")
         self.root.after(0, lambda: self.actualizar_progreso_retro(90))
 
         target_dlls = ["steam_api64.dll", "steam_api.dll"]
         patched_count = 0
         nick = load_config().get("nickname", "SteamUnbound")
         avatar_path = load_config().get("avatar_path", "")
+        enable_multiplayer = load_config().get("enable_multiplayer", False)
 
         for root_dir, dirs, files in os.walk(ruta_juego):
             if "engine" in root_dir.lower() and "thirdparty" in root_dir.lower():
@@ -538,8 +613,10 @@ class SteamUnboundApp:
                         f.write(str(app_id))
                     with open(os.path.join(settings_dir, "force_account_name.txt"), "w", encoding="utf-8") as f:
                         f.write(nick)
-                    with open(os.path.join(settings_dir, "offline.txt"), "w", encoding="utf-8") as f:
-                        f.write("1")
+
+                    if not enable_multiplayer:
+                        with open(os.path.join(settings_dir, "offline.txt"), "w", encoding="utf-8") as f:
+                            f.write("1")
 
                     if avatar_path and os.path.exists(avatar_path):
                         try:
@@ -553,6 +630,9 @@ class SteamUnboundApp:
         for m_name in manifest_filenames:
             if os.path.exists(m_name): os.remove(m_name)
         if temp_dir.exists(): shutil.rmtree(temp_dir, ignore_errors=True)
+
+        preparar_estructura_logros_goldberg(app_id, self.selected_game_name)
+        self.log_message("[+] Goldberg stats & achievement structure prepared successfully.")
 
         self.log_message(f"All files processed successfully! Injected in {patched_count} location(s).")
         self.root.after(0, lambda: self.actualizar_progreso_retro(100))
