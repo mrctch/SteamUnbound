@@ -98,9 +98,9 @@ pyinstaller --onefile --windowed --name SteamUnbound --icon=assets/icon.ico --ad
 
 SteamUnbound integrates and relies upon several open-source utility tools to complete its automation pipeline. All credit goes to their respective maintainers:
 
-- **[DepotDownloaderMod](https://github.com/Pikachu55/DepotDownloaderMod):** For multi-threaded Steam depot downloading, language filtering, and manifest decryption handling.
+- **[DepotDownloaderMod](https://github.com/SteamAutoCracks/DepotDownloaderMod):** For multi-threaded Steam depot downloading, language filtering, and manifest decryption handling.
 - **[Steamless](https://github.com/atom0s/Steamless):** Created by *atom0s*, for providing the command-line tool (`Steamless.CLI`) used to unpack Steam DRM wrappers from Windows executables.
-- **[Goldberg Steam Emulator](https://gitlab.com/Mr_Goldberg/goldberg_emulator):** For providing offline replacement libraries (`steam_api.dll` / `steam_api64.dll`) and settings configuration structures.
+- **[Goldberg Steam Emulator](https://github.com/Zachareee/goldberg_emu):** For providing offline replacement libraries (`steam_api.dll` / `steam_api64.dll`) and settings configuration structures.
 
 ---
 
