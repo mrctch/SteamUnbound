@@ -106,7 +106,7 @@ SteamUnbound integrates and relies upon several open-source utility tools to com
 
 - **[DepotDownloaderMod](https://github.com/SteamAutoCracks/DepotDownloaderMod):** For multi-threaded Steam depot downloading, language filtering, and manifest decryption handling.
 - **[Steamless](https://github.com/atom0s/Steamless):** Created by *atom0s*, for providing the command-line tool (`Steamless.CLI`) used to unpack Steam DRM wrappers from Windows executables.
-- **[Goldberg Steam Emulator](https://github.com/Zachareee/goldberg_emu):** For providing offline replacement libraries (`steam_api.dll` / `steam_api64.dll`) and settings configuration structures.
+- **[Goldberg Steam Emulator](https://github.com/Detanup01/gbe_fork):** For providing offline replacement libraries (`steam_api.dll` / `steam_api64.dll`) and settings configuration structures.
 
 ---
 
